@@ -62,6 +62,37 @@ func atEof(err error) bool {
 	return false
 }
 
+func parseEmailTime(timestamp string) *time.Time {
+	// some emails add a timezone abbreviation in parenthesis after the UTC
+	// offset, just cutting this off makes it compatible
+	parenFound := strings.Index(timestamp, "(")
+	if parenFound >= 0 {
+		timestamp = timestamp[0:parenFound-1] + timestamp[strings.Index(timestamp, ")")+1:]
+	}
+
+	t, err := time.Parse(time.RFC1123Z, timestamp)
+	if err == nil {
+		return &t
+	}
+
+	t, err = time.Parse("Mon, 2 Jan 2006 15:04:05 -0700", timestamp)
+	if err == nil {
+		return &t
+	}
+
+	t, err = time.Parse(time.RFC1123, timestamp)
+	if err == nil {
+		return &t
+	}
+
+	t, err = time.Parse("Mon, 2 Jan 2006 15:04:05 MST", timestamp)
+	if err == nil {
+		return &t
+	}
+
+	return nil
+}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -74,24 +105,11 @@ func main() {
 
 		if strings.Index(strings.ToLower(line), "date:") == 0 {
 			dateField := strings.Trim(string(line[strings.Index(line, ":")+1:]), " ")
+			msgTime := parseEmailTime(dateField)
 
-			// some emails add a timezone abbreviation in parenthesis after the UTC
-			// offset, just cutting this off makes it compatible
-			parenFound := strings.Index(dateField, "(")
-			if parenFound >= 0 {
-				dateField = dateField[0:parenFound-1] + dateField[strings.Index(dateField, ")")+1:]
-			}
-
-			// time.RFC1123Z parses it with the UTC offset string (e.g. -0700)
-			msgTime, err := time.Parse(time.RFC1123Z, dateField)
-			if err != nil {
-				fmt.Printf("%v\n\n", err)
-				// re-try parsing it with time.RFC1123, which uses a timezone abbreviation (e.g. MDT)
-				msgTime, err = time.Parse(time.RFC1123, dateField)
-				if err != nil {
-					fmt.Printf("Error getting date from email; dateField: %s; err: %v", dateField, err)
-					os.Exit(0)
-				}
+			if msgTime == nil {
+				fmt.Printf("Error getting date from email; dateField: %s", dateField)
+				os.Exit(0)
 			}
 
 			curTime := time.Now()
