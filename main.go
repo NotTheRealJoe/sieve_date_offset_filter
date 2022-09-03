@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,12 +14,12 @@ const EXIT_CODE_OK = 0
 const EXIT_CODE_ERR = 1
 const EXIT_CODE_SPAM = 7
 
-func readToNewlineOr1K(reader *bufio.Reader) (line string, atEndOfFile bool) {
+func readToNewlineOr1K(reader *bufio.Reader, logger *log.Logger) (line string, atEndOfFile bool) {
 	var bs [1024]byte
 
 	for i := 0; i < 1024; i++ {
 		b, err := reader.ReadByte()
-		if atEof(err) {
+		if atEof(err, logger) {
 			return string(bs[0:i]), true
 		}
 
@@ -31,14 +32,14 @@ func readToNewlineOr1K(reader *bufio.Reader) (line string, atEndOfFile bool) {
 
 	// if we've used up all 1024 bytes, advance the reader to the next line, effectively
 	// discarding the rest of the current one
-	atEof := advanceToNextLine(reader)
+	atEof := advanceToNextLine(reader, logger)
 	return string(bs[:]), atEof
 }
 
-func advanceToNextLine(reader *bufio.Reader) bool {
+func advanceToNextLine(reader *bufio.Reader, logger *log.Logger) bool {
 	for {
 		b, err := reader.ReadByte()
-		if atEof(err) {
+		if atEof(err, logger) {
 			return true
 		}
 
@@ -102,7 +103,7 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		line, atEof := readToNewlineOr1K(reader)
+		line, atEof := readToNewlineOr1K(reader, logger)
 
 		// remove the \r if the message used \r\n; also cut any spaces that
 		// might be hanging around
@@ -123,6 +124,7 @@ func main() {
 
 			if msgTime.Equal(threshold) || msgTime.After(threshold) {
 				// Test failed; message is too far in the future!
+				fmt.Print("too far in future")
 				os.Exit(EXIT_CODE_SPAM)
 			}
 
