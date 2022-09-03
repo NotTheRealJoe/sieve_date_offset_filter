@@ -136,4 +136,7 @@ func main() {
 			break
 		}
 	}
+
+	// say e-mail is OK if all lines read and no date found
+	os.Exit(EXIT_CODE_OK)
 }
