@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-const EXIT_CODE_OK = 0
-const EXIT_CODE_ERR = 1
-const EXIT_CODE_SPAM = 7
+const EXIT_CODE_OK = 1
+const EXIT_CODE_ERR = 2
+const EXIT_CODE_SPAM = 0
 
 func readToNewlineOr1K(reader *bufio.Reader, logger *log.Logger) (line string, atEndOfFile bool) {
 	var bs [1024]byte
