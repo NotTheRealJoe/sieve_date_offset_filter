@@ -27,12 +27,8 @@ go build .
 There are no command-line options. The program reads e-mail data including
 headers from STDIN. It will exit as soon as a line with the `Date:` header
 is read, or if EOF is reached. An exit status of `0` indicates that the date
-is acceptable. An exit status of `1` indicates that the date is too far in
-the future.
-
-Note that in order to prevent an e-mail server incorrectly discarding messages,
-the program will exit with status `0` if an internal error occurs. Information
-about internal errors is output to STDOUT.
+is too far in the future. If the date is acceptable, or any error occurs, the
+program will exit with a non-zero code.
 
 ## Integrating with your e-mail server
 This program is designed to be used with Dovecot Pigeonhole's `extprograms`
