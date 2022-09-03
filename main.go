@@ -2,12 +2,16 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
 )
+
+const EXIT_CODE_OK = 0
+const EXIT_CODE_ERR = 1
+const EXIT_CODE_SPAM = 7
 
 func readToNewlineOr1K(reader *bufio.Reader) (line string, atEndOfFile bool) {
 	var bs [1024]byte
@@ -44,7 +48,7 @@ func advanceToNextLine(reader *bufio.Reader) bool {
 	}
 }
 
-func atEof(err error) bool {
+func atEof(err error, logger *log.Logger) bool {
 	if err == nil {
 		return false
 	}
@@ -53,10 +57,10 @@ func atEof(err error) bool {
 		return true
 	}
 
-	fmt.Printf("%s:%v\n", "Error in reading input.", err)
+	logger.Printf("%s:%v\n", "Error in reading input.", err)
 	// we exit with success on any *internal* errors, as exiting
 	// with a failure status causes the email to be dropped
-	os.Exit(0)
+	os.Exit(EXIT_CODE_OK)
 
 	// unreachable, but the compiler wants it
 	return false
@@ -94,6 +98,7 @@ func parseEmailTime(timestamp string) *time.Time {
 }
 
 func main() {
+	logger := log.New(os.Stderr, "", 0)
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -108,8 +113,8 @@ func main() {
 			msgTime := parseEmailTime(dateField)
 
 			if msgTime == nil {
-				fmt.Printf("Error getting date from email; dateField: %s", dateField)
-				os.Exit(0)
+				logger.Printf("Error getting date from email; dateField: %s", dateField)
+				os.Exit(EXIT_CODE_OK)
 			}
 
 			curTime := time.Now()
@@ -118,11 +123,11 @@ func main() {
 
 			if msgTime.Equal(threshold) || msgTime.After(threshold) {
 				// Test failed; message is too far in the future!
-				os.Exit(1)
+				os.Exit(EXIT_CODE_SPAM)
 			}
 
 			// Message time is OK.
-			os.Exit(0)
+			os.Exit(EXIT_CODE_OK)
 		}
 
 		if atEof {
